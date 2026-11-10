@@ -115,6 +115,25 @@ def show_post(text, key):
 
 collection = get_collection()
 
+# ---------- DEBUG: Groq test (kaam hone ke baad hata sakti ho) ----------
+with st.sidebar:
+    st.write("Debug")
+    if st.button("Test Groq"):
+        key = get_groq_key()
+        if not key:
+            st.error("GROQ_API_KEY nahi mili (Secrets check karo)")
+        else:
+            from groq import Groq
+
+            client = Groq(api_key=key)
+            try:
+                available = [m.id for m in client.models.list().data]
+                st.success("Key kaam kar rahi hai. Is key ke liye available models:")
+                st.write(available)
+            except Exception as e:
+                st.error(f"Error type: {type(e).__name__}")
+                st.write(str(e))
+
 st.title("LinkedIn Post Generator")
 
 tab1, tab2, tab3 = st.tabs(["Generate new post", "Improve my draft", "My Style"])

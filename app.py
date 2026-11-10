@@ -46,6 +46,12 @@ Are you a tutorial watcher or a project builder?
 
 SYSTEM_PROMPT = "You are an expert LinkedIn content writer."
 
+GROQ_MODELS = [
+    "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+]
+
 
 @st.cache_resource
 def get_collection():
@@ -71,15 +77,21 @@ def ask_llama(prompt, temperature=0.9):
     key = get_groq_key()
 
     if key:  # online: Groq
-        from groq import Groq
+        from groq import Groq, NotFoundError
 
         client = Groq(api_key=key)
-        res = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=messages,
-            temperature=temperature,
-        )
-        return res.choices[0].message.content
+        last_error = None
+        for model_name in GROQ_MODELS:
+            try:
+                res = client.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    temperature=temperature,
+                )
+                return res.choices[0].message.content
+            except NotFoundError as e:
+                last_error = e  # ye model nahi mila, agla try karo
+        raise last_error
 
     # laptop: Ollama
     res = ollama.chat(
@@ -107,7 +119,7 @@ st.title("LinkedIn Post Generator")
 
 tab1, tab2, tab3 = st.tabs(["Generate new post", "Improve my draft", "My Style"])
 
-# ---------- TAB 3: My Style (RAG ka data yahan aata hai) ----------
+# ---------- TAB 3: My Style ----------
 with tab3:
     st.write("Paste your past LinkedIn posts. Separate each post with a line containing only `---`")
     raw = st.text_area("Your past posts", height=250, key="style_input")
